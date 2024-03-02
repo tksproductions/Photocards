@@ -2,18 +2,23 @@ import cv2
 import numpy as np
 import os
 import shutil
+from collections import defaultdict
 
 def extract_photos(input_image, aspect_ratio=(5.5, 8.5), min_percentage=0.1):
     gray = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
-    
-    blur = cv2.GaussianBlur(gray, (5, 5), 0)
-    _, threshold = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    contours, _ = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    adaptiveThresholded = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                                cv2.THRESH_BINARY_INV, 11, 2)
+
+    kernel = np.ones((3, 3), np.uint8)
+    morphed = cv2.morphologyEx(adaptiveThresholded, cv2.MORPH_CLOSE, kernel)
+
+    contours, _ = cv2.findContours(morphed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     extracted_photos = []
     total_pixels = input_image.shape[1] * input_image.shape[0]
     min_size = np.sqrt(min_percentage / 100.0 * total_pixels)
+    size_groups = defaultdict(list)
 
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
@@ -21,11 +26,24 @@ def extract_photos(input_image, aspect_ratio=(5.5, 8.5), min_percentage=0.1):
 
         if (aspect_ratio[0] / aspect_ratio[1] * 0.8 <= ratio <= aspect_ratio[0] / aspect_ratio[1] * 1.2 
             and w >= min_size and h >= min_size):
+            area = w * h
+            size_groups[area].append((x, y, w, h))
+
+    most_common_size = max(size_groups, key=lambda k: len(size_groups[k]))
+
+    tolerance_value = most_common_size * 0.1
+
+    for cnt in contours:
+        x, y, w, h = cv2.boundingRect(cnt)
+        area = w * h
+        ratio = float(w) / h
+
+        if (abs(area - most_common_size) < tolerance_value and 
+            aspect_ratio[0] / aspect_ratio[1] * 0.8 <= ratio <= aspect_ratio[0] / aspect_ratio[1] * 1.2):
             photo = input_image[y:y+h, x:x+w]
             extracted_photos.append(photo)
 
     return extracted_photos
-
 
 def save_photos(photos, idol_name, base_filename='photocard'):
     script_directory = os.path.dirname(os.path.abspath(__file__))
