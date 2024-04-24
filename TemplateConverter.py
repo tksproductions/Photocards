@@ -3,6 +3,7 @@ import numpy as np
 import os
 import shutil
 from collections import defaultdict
+import re
 
 def extract_photos(input_image, aspect_ratio=(5.5, 8.5), min_percentage=0.1):
     gray = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
@@ -41,8 +42,12 @@ def extract_photos(input_image, aspect_ratio=(5.5, 8.5), min_percentage=0.1):
     return extracted_photos
 
 def save_photos(photos, idol_name, base_filename='photocard'):
-    script_directory = os.path.dirname(os.path.abspath(__file__))
+    idol_name = re.sub(r'^\s*\d*\s*', '', idol_name)
+    idol_name = re.sub(r'[^\w\s]', '', idol_name)
+    idol_name = re.sub(r'\s+', '', idol_name)
+    idol_name = idol_name.lower()
 
+    script_directory = os.path.dirname(os.path.abspath(__file__))
     idols_folder = os.path.join(script_directory, 'Photocards')
     idol_directory = os.path.join(idols_folder, idol_name)
 
@@ -57,7 +62,7 @@ def save_photos(photos, idol_name, base_filename='photocard'):
 
 def process_templates():
     script_directory = os.path.dirname(os.path.abspath(__file__))
-    templates_folder = os.path.join(script_directory, 'Templates')
+    templates_folder = os.path.join(script_directory, 'Templates2')
 
     for subdir, _, files in os.walk(templates_folder):
         for file in files:
