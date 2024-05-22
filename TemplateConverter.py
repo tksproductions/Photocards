@@ -62,7 +62,7 @@ def save_photos(photos, idol_name, base_filename='photocard'):
 
 def process_templates():
     script_directory = os.path.dirname(os.path.abspath(__file__))
-    templates_folder = os.path.join(script_directory, 'Templates2')
+    templates_folder = os.path.join(script_directory, 'Templates')
 
     for subdir, _, files in os.walk(templates_folder):
         for file in files:
